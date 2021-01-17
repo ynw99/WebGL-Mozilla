@@ -1,4 +1,4 @@
-var cubeRotation = 0.0;
+var sphereRotation = 0.0;
 
 main();
 
@@ -20,7 +20,7 @@ function main() {
 
     const vsSource = `
         attribute vec4 aVertexPosition;
-        attribute vec4 aVertexColor;
+        uniform vec4 aVertexColor;
         uniform mat4 uModelViewMatrix;
         uniform mat4 uProjectionMatrix;
         varying lowp vec4 vColor;        
@@ -78,28 +78,9 @@ function main() {
     requestAnimationFrame(render);
 }
 
-//
-// initBuffers
-//
-// Initialize the buffers we'll need. For this demo, we just
-// have one object -- a simple three-dimensional cube.
-//
 function initBuffers(gl) {
-    
-    // Create a buffer for the cube's vertex positions.
-
-    const positionBuffer = gl.createBuffer();
-
-    // Select the positionBuffer as the one to apply buffer
-    // operations to from here out.
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-
-    // Now create an array of positions for the cube.
-
-    var SPHERE_DIV = 12
-
-    const positions = [];
+    var SPHERE_DIV = 12;
+    var positions = [];
 
     for (var i = 0; i <= SPHERE_DIV; i++) {
         var ai = i * Math.PI / SPHERE_DIV;
@@ -113,35 +94,12 @@ function initBuffers(gl) {
             positions = positions.concat([ si * sj, ci, si * cj ])
         }
     }
-    
-    // Now pass the list of positions into WebGL to build the
-    // shape. We do this by creating a Float32Array from the
-    // JavaScript array, then use it to fill the current buffer.
 
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-    
-    // Now set up the colors for the faces. We'll use solid colors
-    // for each face.
 
-    const faceColors = 
-
-    // Convert the array of colors into a table for all the vertices.
-
-    var colors = [252, 212, 64, 255];
-
-    const colorBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(colors), gl.STATIC_DRAW);
-
-    // Build the element array buffer; this specifies the indices
-    // into the vertex arrays for each face's vertices.
-
-    const indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-    // This array defines each face as two triangles, using the
-    // indices into the vertex array to specify each triangle's
-    // position.
+    const colors = [252, 212, 64, 255];
 
     var indices = []
     for (var i = 0; i < SPHERE_DIV; ++i) {
@@ -154,9 +112,9 @@ function initBuffers(gl) {
             ]);
         }
     }
-    
-    // Now send the element array to GL
 
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,
         new Uint16Array(indices), gl.STATIC_DRAW);
     
@@ -164,12 +122,11 @@ function initBuffers(gl) {
         position: positionBuffer,
         indices: indexBuffer,
         count: indices.length,
+        color: colors,
     };
 }
 
-//
-// Draw the scene.
-//
+
 function drawScene(gl, programInfo, buffers, deltaTime) {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);  // Clear to black, fully opaque
     gl.clearDepth(1.0);                 // Clear everything
@@ -177,7 +134,6 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     gl.depthFunc(gl.LEQUAL);            // Near things obscure far things
 
     // Clear the canvas before we start drawing on it.
-
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     // Create a perspective matrix, a special matrix that is
@@ -186,7 +142,6 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     // ratio that matches the display size of the canvas
     // and we only want to see objects between 0.1 units
     // and 100 units away from the camera.
-
     const fieldOfView = 45 * Math.PI / 180;   // in radians
     const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
     const zNear = 0.1;
@@ -207,17 +162,16 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     // Now move the drawing position a bit to where we want to
     // start drawing the square.
-
     mat4.translate(modelViewMatrix,     // destination matrix
                    modelViewMatrix,     // matrix to translate
                    [-0.0, 0.0, -6.0]);  // amount to translate
     mat4.rotate(modelViewMatrix,  // destination matrix
                 modelViewMatrix,  // matrix to rotate
-                cubeRotation,     // amount to rotate in radians
+                sphereRotation,     // amount to rotate in radians
                 [0, 0, 1]);       // axis to rotate around (Z)
     mat4.rotate(modelViewMatrix,  // destination matrix
                 modelViewMatrix,  // matrix to rotate
-                cubeRotation * .7,// amount to rotate in radians
+                sphereRotation * .7,// amount to rotate in radians
                 [0, 1, 0]);       // axis to rotate around (X)
 
     // Tell WebGL how to pull out the positions from the position
@@ -264,7 +218,6 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
 
     // Tell WebGL to use our program when drawing
-
     gl.useProgram(programInfo.program);
 
     // Set the shader uniforms
@@ -279,7 +232,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
         modelViewMatrix);
     
     {
-        const vertexCount = 36;
+        const vertexCount = buffers.count;
         const type = gl.UNSIGNED_SHORT;
         const offset = 0;
         gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
@@ -287,7 +240,7 @@ function drawScene(gl, programInfo, buffers, deltaTime) {
 
     // Update the rotation for the next draw
 
-    cubeRotation += deltaTime;
+    sphereRotation += deltaTime;
 }
 
 //
